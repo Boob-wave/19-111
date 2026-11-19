@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ê ông ơi! ❤️</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,sans-serif;color:white;background:radial-gradient(circle at top,#54275e,#19162f 58%,#0c1020);overflow-x:hidden}
+.wrap{min-height:100vh;display:grid;place-items:center;padding:22px}.panel{width:min(900px,100%);text-align:center}
+h1{font-size:clamp(2rem,6vw,4rem);margin:0 0 12px}p{font-size:clamp(1rem,2.8vw,1.2rem);line-height:1.6}.muted{color:#d9cce8}.small{font-size:.9rem}
+button,.upload{border:0;border-radius:999px;padding:14px 24px;font-size:1rem;font-weight:800;cursor:pointer;color:#28152f;background:#ffcae2;box-shadow:0 8px 25px #0004;transition:.18s}
+button:hover,.upload:hover{transform:translateY(-2px);filter:brightness(1.08)}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:linear-gradient(135deg,#ffb5d2,#ffdc91)}
+.options{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:25px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:25px auto;max-width:760px}
+.grid img{width:100%;height:170px;object-fit:cover;border-radius:18px;opacity:0;transform:translateY(18px);animation:show .8s forwards;box-shadow:0 8px 24px #0005}
+@keyframes show{to{opacity:1;transform:translateY(0)}}.question{font-size:clamp(1.6rem,5vw,2.7rem);font-weight:900;margin:20px 0}
+.choice{display:block;width:min(430px,100%);margin:12px auto;border-radius:18px}.note{min-height:30px;color:#ffe5a8;font-weight:800}
+.final-photo{width:min(330px,80vw);max-height:340px;object-fit:cover;border-radius:24px;margin:18px auto}
+input[type=file]{display:none}.heart{position:fixed;pointer-events:none;animation:float 3s linear forwards;font-size:22px}
+@keyframes float{to{transform:translateY(-110vh) rotate(30deg);opacity:0}}
+.owner-box{margin:25px auto 8px;padding:16px;border:1px solid #ffffff35;border-radius:18px;max-width:540px;background:#ffffff0b}
+.owner-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+input[type=password]{padding:13px 16px;border-radius:999px;border:1px solid #ffffff55;background:#fff;color:#222;min-width:0;max-width:100%;font-size:1rem}
+.status{min-height:24px;color:#ffe5a8}
+</style></head><body>
+<div class="wrap"><main class="panel"><div id="content">
+<h1>Ê ông ơi! 💖</h1><p class="muted">Chào mừng đến với góc ảnh của tôi.</p>
+<div id="gallery" class="grid"></div><p id="galleryStatus" class="small muted">Đang tải ảnh...</p>
+<div class="owner-box">
+<strong>🔐 Khu vực chủ trang web</strong>
+<p class="small muted">Chỉ chủ trang web đăng nhập mới có thể tải ảnh lên. Khách không cần đăng nhập.</p>
+<div id="loginArea"><div class="owner-row"><input id="password" type="password" placeholder="Mật khẩu chủ trang web" autocomplete="current-password"><button class="primary" id="login">Đăng nhập</button></div></div>
+<div id="uploadArea" hidden><label class="upload" for="photos">📸 Chọn ảnh để tải lên</label><input id="photos" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple><button id="logout">Đăng xuất</button></div>
+<div id="ownerStatus" class="status small" aria-live="polite"></div>
+</div><button class="primary" id="start" disabled>Bắt đầu ✨</button>
+</div></main></div>
+<script>
+const content=document.getElementById('content'),gallery=document.getElementById('gallery');
+let photoUrls=[],ownerCsrfToken=null;
+const wishes=[
+"Chúc ông luôn vui vẻ, khỏe mạnh, tiền vào như nước và lúc nào cũng gặp may mắn! 🍀",
+"Chúc ông tuổi mới bùng nổ, làm gì cũng thuận lợi, cười thật nhiều và luôn có anh em bên cạnh! 🎉",
+"Chúc ông ngày càng đẹp trai, giàu có, hạnh phúc — nhớ giữ lời hứa chiếc iPhone nhé! 📱"
+];
+async function loadGallery(){
+ try{const res=await fetch('/api/photos');if(!res.ok)throw new Error();photoUrls=await res.json();gallery.innerHTML='';
+ photoUrls.forEach((url,i)=>{const im=new Image();im.src=url;im.alt='Ảnh kỷ niệm';im.style.animationDelay=(i*.18)+'s';gallery.appendChild(im)});
+ document.getElementById('galleryStatus').textContent=photoUrls.length?`Có ${photoUrls.length} tấm ảnh đang chờ ông khám phá ❤️`:'Chủ trang web chưa tải ảnh lên.';
+ document.getElementById('start').disabled=photoUrls.length===0;
+ }catch(e){document.getElementById('galleryStatus').textContent='Chưa tải được thư viện ảnh.'}
+}
+async function refreshOwner(){const res=await fetch('/api/me'),data=await res.json();
+ document.getElementById('loginArea').hidden=data.owner;document.getElementById('uploadArea').hidden=!data.owner;
+ ownerCsrfToken=data.owner?data.csrfToken:null}
+document.getElementById('login').onclick=async()=>{const status=document.getElementById('ownerStatus');
+ try{const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.getElementById('password').value})});
+ const data=await res.json();if(!res.ok)throw new Error(data.error||'Đăng nhập thất bại');
+ document.getElementById('password').value='';ownerCsrfToken=data.csrfToken;status.textContent='Đăng nhập thành công.';await refreshOwner()
+ }catch(e){status.textContent=e.message}};
+document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login').click()});
+document.getElementById('logout').onclick=async()=>{await fetch('/api/logout',{method:'POST'});ownerCsrfToken=null;await refreshOwner();document.getElementById('ownerStatus').textContent='Đã đăng xuất.'};
+document.getElementById('photos').addEventListener('change',async e=>{const files=[...e.target.files];if(!files.length)return;
+ const form=new FormData();files.forEach(f=>form.append('files',f));const status=document.getElementById('ownerStatus');status.textContent='Đang tải ảnh lên...';
+ try{const res=await fetch('/api/photos',{method:'POST',headers:{'X-Owner-CSRF':ownerCsrfToken||''},body:form});const data=await res.json();
+ if(!res.ok)throw new Error(data.error||'Tải ảnh thất bại');status.textContent=`Đã tải lên ${data.uploaded} ảnh thành công.`;await loadGallery();e.target.value=''
+ }catch(err){status.textContent=err.message}});
+document.getElementById('start').onclick=()=>{content.innerHTML='<h1>Những khoảnh khắc của tôi 📸</h1><p class="muted">Ảnh đang xuất hiện từ từ...</p><div class="grid" id="show"></div><p class="muted">Chạm vào màn hình để tiếp tục nhé 👆</p>';
+ const g=document.getElementById('show');photoUrls.forEach((url,i)=>{const im=new Image();im.src=url;im.style.animationDelay=(i*.28)+'s';g.appendChild(im)});
+ content.onclick=()=>{content.onclick=null;q1()}};
+function dodge(btn){btn.addEventListener('pointerenter',()=>move(btn));btn.addEventListener('click',e=>{e.preventDefault();move(btn)})}
+function move(btn){btn.style.position='fixed';btn.style.left=Math.random()*Math.max(20,innerWidth-140)+'px';btn.style.top=Math.random()*Math.max(20,innerHeight-80)+'px';btn.style.zIndex=10}
+function q1(){content.innerHTML='<div class="question">Câu 1: Tôi có đẹp trai không? 😎</div><div class="options"><button class="primary" id="yes">Có ❤️</button><button id="no">Không 🙅</button></div>';
+ dodge(document.getElementById('no'));document.getElementById('yes').onclick=()=>{sound();content.innerHTML='<h1>Tôi cũng biết tôi đẹp trai mà! 😎</h1><p style="font-size:4rem">🗿</p><p>*Âm thanh meme bruhhh* 💀</p><button class="primary" id="next">Tiếp tục ➜</button>';document.getElementById('next').onclick=q2}}
+function q2(){content.innerHTML='<div class="question">Câu 2: Ông có đẹp trai không? 😏</div><div class="options"><button class="primary" id="yes">Có 😎</button><button id="no">Không</button></div>';
+ dodge(document.getElementById('no'));document.getElementById('yes').onclick=()=>{content.innerHTML='<h1>Tôi code sai đấy, ông chỉ đẹp trai sau tôi thôi! 🤣</h1><p style="font-size:4rem">👑</p><button class="primary" id="next">Câu tiếp theo ➜</button>';document.getElementById('next').onclick=q3}}
+function q3(){content.innerHTML='<div class="question">Câu 3: Ông sẽ mua gì tặng tôi? 🎁</div><button class="choice primary" id="phone">📱 iPhone 18 Pro Max</button><button class="choice" id="money">💸 Chuyển 300 triệu</button><button class="choice" id="car">🚗 Xe VF3</button><button class="choice" id="poop">💩 Tặng cái cục cứt</button><div class="note" id="note"></div>';
+ const note=document.getElementById('note');['money','car'].forEach(id=>document.getElementById(id).onclick=()=>{note.textContent='Ông có tiền đâu mà chọn 😂';document.getElementById(id).remove()});
+ dodge(document.getElementById('poop'));document.getElementById('phone').onclick=finale}
+function finale(){sound();for(let i=0;i<24;i++){const h=document.createElement('div');h.className='heart';h.textContent=['❤️','💖','✨','🎉'][i%4];h.style.left=Math.random()*100+'vw';h.style.bottom='-30px';document.body.appendChild(h);setTimeout(()=>h.remove(),3500)}
+ const wish=wishes[Math.floor(Math.random()*wishes.length)],img=photoUrls.length?'<img class="final-photo" src="'+photoUrls[Math.floor(Math.random()*photoUrls.length)]+'">':'';
+ content.innerHTML='<h1>YÊU CẦU ĐÃ ĐƯỢC GHI NHẬN! 📱</h1><p style="font-size:3.5rem">🎉🤣🥳</p>'+img+'<h2>'+wish+'</h2><p class="muted">Cảm ơn ông đã tham gia bài kiểm tra quan trọng này ❤️</p><button class="primary" onclick="location.reload()">Chơi lại ↻</button>'}
+function sound(){try{const C=AudioContext||webkitAudioContext,c=new C(),o=c.createOscillator(),g=c.createGain();o.type='sawtooth';o.frequency.setValueAtTime(220,c.currentTime);o.frequency.exponentialRampToValueAtTime(75,c.currentTime+.42);g.gain.setValueAtTime(.001,c.currentTime);g.gain.exponentialRampToValueAtTime(.15,c.currentTime+.03);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.55);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.56)}catch(e){}}
+refreshOwner();loadGallery();
+</script></body></html>
